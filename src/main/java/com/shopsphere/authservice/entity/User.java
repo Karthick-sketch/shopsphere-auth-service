@@ -2,18 +2,19 @@ package com.shopsphere.authservice.entity;
 
 import com.shopsphere.authservice.enums.UserRole;
 import jakarta.persistence.*;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "user_credentials")
+@Table(name = "users")
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserCredential {
+public class User {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,5 +28,9 @@ public class UserCredential {
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
-  private UserRole role;
+  @Builder.Default
+  private UserRole role = UserRole.USER;
+
+  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<UserSession> sessions;
 }

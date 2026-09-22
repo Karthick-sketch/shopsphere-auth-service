@@ -1,6 +1,6 @@
 package com.shopsphere.authservice.service;
 
-import com.shopsphere.authservice.config.JwtProperties;
+import com.shopsphere.authservice.config.TokenProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -18,56 +18,33 @@ public class JwtService {
 
   private static final String CLAIM_TYPE = "type";
   private static final String TOKEN_TYPE_ACCESS = "access";
-  private static final String TOKEN_TYPE_REFRESH = "refresh";
 
-  private final JwtProperties jwtProperties;
+  private final TokenProperties tokenProperties;
 
-  public String generateAccessToken(Long userCredentialId) {
-    return buildToken(
-      Map.of(CLAIM_TYPE, TOKEN_TYPE_ACCESS),
-      userCredentialId,
-      jwtProperties.getAccessTokenExpiration()
-    );
-  }
-
-  public String generateRefreshToken(Long userCredentialId) {
-    return buildToken(
-      Map.of(CLAIM_TYPE, TOKEN_TYPE_REFRESH),
-      userCredentialId,
-      jwtProperties.getRefreshTokenExpiration()
-    );
-  }
-
-  public boolean isRefreshToken(String token) {
-    return TOKEN_TYPE_REFRESH.equals(extractTokenType(token));
-  }
-
-  public boolean isTokenValid(String token, Long credentialId) {
-    return (
-      extractCredentialId(token).equals(credentialId) && !isTokenExpired(token)
-    );
-  }
-
-  public Long extractCredentialId(String token) {
-    return Long.valueOf(extractClaim(token, claim -> claim.getSubject()));
-  }
-
-  private String buildToken(
-    Map<String, String> claims,
-    Long credentialId,
-    long expiration
-  ) {
-    long now = System.currentTimeMillis();
+  public String generateAccessToken(Long userId) {
+    Long now = System.currentTimeMillis();
     return Jwts.builder()
-      .claims(claims)
-      .subject(credentialId.toString())
+      .claims(Map.of(CLAIM_TYPE, TOKEN_TYPE_ACCESS))
+      .subject(userId.toString())
       .issuedAt(new Date(now))
-      .expiration(new Date(now + expiration))
+      .expiration(new Date(now + tokenProperties.getAccessExpiration()))
       .signWith(getSigningKey())
       .compact();
   }
 
-  private Claims exctractAllClaims(String token) {
+  public Boolean isAccessTokenValid(String token, Long userId) {
+    return (
+      TOKEN_TYPE_ACCESS.equals(extractTokenType(token)) &&
+      extractId(token).equals(userId) &&
+      !isTokenExpired(token)
+    );
+  }
+
+  public Long extractId(String token) {
+    return Long.valueOf(extractClaim(token, claim -> claim.getSubject()));
+  }
+
+  private Claims extractAllClaims(String token) {
     return Jwts.parser()
       .verifyWith(getSigningKey())
       .build()
@@ -76,14 +53,14 @@ public class JwtService {
   }
 
   private <T> T extractClaim(String token, Function<Claims, T> resolver) {
-    return resolver.apply(exctractAllClaims(token));
+    return resolver.apply(extractAllClaims(token));
   }
 
   private String extractTokenType(String token) {
     return extractClaim(token, claim -> claim.get(CLAIM_TYPE, String.class));
   }
 
-  private boolean isTokenExpired(String token) {
+  private Boolean isTokenExpired(String token) {
     return extractClaim(token, claim -> claim.getExpiration()).before(
       new Date()
     );
@@ -91,7 +68,7 @@ public class JwtService {
 
   private SecretKey getSigningKey() {
     return Keys.hmacShaKeyFor(
-      Decoders.BASE64.decode(jwtProperties.getSecret())
+      Decoders.BASE64.decode(tokenProperties.getAccessSecret())
     );
   }
 }

@@ -1,84 +1,57 @@
 package com.shopsphere.authservice.service;
 
-import com.shopsphere.authservice.dto.*;
-import com.shopsphere.authservice.entity.UserCredential;
-import com.shopsphere.authservice.repository.UserCredentialRepository;
-import java.util.Optional;
+import com.shopsphere.authservice.dto.LoginRequest;
+import com.shopsphere.authservice.dto.RegisterRequest;
+import com.shopsphere.authservice.dto.Tokens;
+import com.shopsphere.authservice.entity.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
-  private final PasswordEncoder passwordEncoder;
-
-  private final UserCredentialRepository userCredentialRepository;
-
+  private final UserService userService;
   private final JwtService jwtService;
+  private final RefreshTokenService refreshTokenService;
 
-  public AuthResponse register(RegisterRequest credential) {
-    UserCredential userCredential = toUserCredential(credential);
-    userCredential.setPassword(
-      passwordEncoder.encode(userCredential.getPassword())
+  public Tokens register(RegisterRequest credential) {
+    User user = userService.createUser(credential);
+    return generateTokens(user);
+  }
+
+  public Tokens login(LoginRequest credential) {
+    User user = userService.validateLogin(credential);
+    return generateTokens(user);
+  }
+
+  public Tokens generateAccessToken(String refreshToken) {
+    UserSession userSession = refreshTokenService.findByRefreshToken(
+      refreshToken
     );
-    userCredential = userCredentialRepository.save(userCredential);
-    return generateTokens(userCredential.getId());
-  }
 
-  public AuthResponse login(LoginRequest credential) {
-    Optional<UserCredential> userCredential =
-      userCredentialRepository.findByEmail(credential.getEmail());
-    if (userCredential.isEmpty()) {
-      throw new RuntimeException("User not found");
-    }
-
-    if (
-      !passwordEncoder.matches(
-        passwordEncoder.encode(credential.getPassword()),
-        userCredential.get().getPassword()
-      )
-    ) {
-      throw new RuntimeException("Invalid password");
-    }
-
-    return generateTokens(userCredential.get().getId());
-  }
-
-  public AuthResponse generateAccessToken(String refreshToken) {
-    if (!jwtService.isRefreshToken(refreshToken)) {
+    if (!refreshTokenService.isValidRefreshToken(userSession)) {
       throw new RuntimeException("Invalid token");
     }
 
-    Long credentialId;
-    try {
-      credentialId = jwtService.extractCredentialId(refreshToken);
-    } catch (Exception ex) {
-      throw new RuntimeException("Invalid token");
-    }
-    if (
-      !jwtService.isTokenValid(refreshToken, credentialId) ||
-      !userCredentialRepository.existsById(credentialId)
-    ) {
-      throw new RuntimeException("Invalid token");
-    }
-
-    return generateTokens(credentialId);
+    return generateTokens(userSession);
   }
 
-  private AuthResponse generateTokens(Long userCredentialId) {
-    return new AuthResponse(
-      jwtService.generateAccessToken(userCredentialId),
-      jwtService.generateRefreshToken(userCredentialId)
+  public void logout(String refreshToken) {
+    refreshTokenService.revokeRefreshToken(refreshToken);
+  }
+
+  private Tokens generateTokens(User user) {
+    return new Tokens(
+      jwtService.generateAccessToken(user.getId()),
+      refreshTokenService.generateRefreshToken(user)
     );
   }
 
-  private UserCredential toUserCredential(RegisterRequest credential) {
-    return UserCredential.builder()
-      .email(credential.getEmail())
-      .password(credential.getPassword())
-      .role(credential.getRole())
-      .build();
+  private Tokens generateTokens(UserSession userSession) {
+    return new Tokens(
+      jwtService.generateAccessToken(userSession.getUser().getId()),
+      refreshTokenService.generateRefreshToken(userSession)
+    );
   }
 }
