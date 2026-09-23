@@ -2,6 +2,7 @@ package com.shopsphere.authservice.controller;
 
 import com.shopsphere.authservice.constants.SecurityConstants;
 import com.shopsphere.authservice.dto.*;
+import com.shopsphere.authservice.exception.InvalidTokenException;
 import com.shopsphere.authservice.service.AuthService;
 import com.shopsphere.authservice.service.CookieService;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +43,7 @@ public class AuthController {
     ) String refreshToken
   ) {
     if (refreshToken == null) {
-      return ResponseEntity.badRequest().build();
+      throw new InvalidTokenException();
     }
     return buildAuthResponse(authService.generateAccessToken(refreshToken));
   }
@@ -54,7 +55,7 @@ public class AuthController {
     ) String refreshToken
   ) {
     if (refreshToken == null) {
-      return ResponseEntity.badRequest().build();
+      throw new InvalidTokenException();
     }
     authService.logout(refreshToken);
     String cookie = cookieService.createExpiredRefreshTokenCookie();

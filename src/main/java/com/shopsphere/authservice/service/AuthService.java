@@ -4,6 +4,7 @@ import com.shopsphere.authservice.dto.LoginRequest;
 import com.shopsphere.authservice.dto.RegisterRequest;
 import com.shopsphere.authservice.dto.Tokens;
 import com.shopsphere.authservice.entity.*;
+import com.shopsphere.authservice.exception.InvalidTokenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +32,7 @@ public class AuthService {
     );
 
     if (!refreshTokenService.isValidRefreshToken(userSession)) {
-      throw new RuntimeException("Invalid token");
+      throw new InvalidTokenException();
     }
 
     return generateTokens(userSession);

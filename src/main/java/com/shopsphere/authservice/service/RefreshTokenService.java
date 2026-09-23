@@ -2,6 +2,7 @@ package com.shopsphere.authservice.service;
 
 import com.shopsphere.authservice.config.TokenProperties;
 import com.shopsphere.authservice.entity.*;
+import com.shopsphere.authservice.exception.InvalidTokenException;
 import com.shopsphere.authservice.repository.UserSessionRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -38,7 +39,7 @@ public class RefreshTokenService {
   public UserSession findByRefreshToken(String refreshToken) {
     return userSessionRepository
       .findByRefreshToken(hashRefreshToken(refreshToken))
-      .orElseThrow(() -> new RuntimeException("Invalid token"));
+      .orElseThrow(() -> new InvalidTokenException());
   }
 
   public boolean isValidRefreshToken(UserSession userSession) {
@@ -52,7 +53,7 @@ public class RefreshTokenService {
   public void revokeRefreshToken(String refreshToken) {
     UserSession userSession = findByRefreshToken(refreshToken);
     if (!isValidRefreshToken(userSession)) {
-      throw new RuntimeException("Invalid token");
+      throw new InvalidTokenException();
     }
     revokeRefreshToken(userSession);
   }
