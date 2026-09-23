@@ -44,14 +44,15 @@ public class AuthService {
 
   private Tokens generateTokens(User user) {
     return new Tokens(
-      jwtService.generateAccessToken(user.getId()),
+      jwtService.generateAccessToken(user.getId(), user.getRole()),
       refreshTokenService.generateRefreshToken(user)
     );
   }
 
   private Tokens generateTokens(UserSession userSession) {
+    User user = userSession.getUser();
     return new Tokens(
-      jwtService.generateAccessToken(userSession.getUser().getId()),
+      jwtService.generateAccessToken(user.getId(), user.getRole()),
       refreshTokenService.generateRefreshToken(userSession)
     );
   }

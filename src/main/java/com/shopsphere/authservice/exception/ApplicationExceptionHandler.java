@@ -12,4 +12,10 @@ public class ApplicationExceptionHandler {
   public ResponseEntity<?> handleException(InvalidTokenException e) {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
   }
+
+  @ExceptionHandler(RuntimeException.class)
+  public ResponseEntity<?> handleException(RuntimeException e) {
+    // TODO: use a logger to log the error message
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+  }
 }
