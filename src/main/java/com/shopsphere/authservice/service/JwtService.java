@@ -2,13 +2,9 @@ package com.shopsphere.authservice.service;
 
 import com.shopsphere.authservice.config.TokenProperties;
 import com.shopsphere.authservice.enums.UserRole;
+import com.shopsphere.authservice.util.KeyUtil;
 import io.jsonwebtoken.Jwts;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.KeyFactory;
-import java.security.PrivateKey;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.Base64;
+import java.security.interfaces.RSAPrivateKey;
 import java.util.Date;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -26,37 +22,17 @@ public class JwtService {
 
   public String generateAccessToken(Long userId, UserRole role) {
     Long now = System.currentTimeMillis();
+    Long expiration = now + tokenProperties.getAccessExpiration() * 60 * 1000;
+    RSAPrivateKey privateKey = KeyUtil.loadPrivateKey(
+      tokenProperties.getPrivateKeyPath()
+    );
+
     return Jwts.builder()
       .claims(Map.of(CLAIM_TYPE, TOKEN_TYPE_ACCESS, CLAIM_ROLE, role))
       .subject(userId.toString())
       .issuedAt(new Date(now))
-      .expiration(
-        new Date(now + tokenProperties.getAccessExpiration() * 60 * 1000)
-      )
-      .signWith(getPrivateKey(), Jwts.SIG.RS256)
+      .expiration(new Date(expiration))
+      .signWith(privateKey, Jwts.SIG.RS256)
       .compact();
-  }
-
-  private PrivateKey getPrivateKey() {
-    try {
-      String key = Files.readString(
-        Path.of(tokenProperties.getPrivateKeyPath())
-      );
-      String privateKeyContent = key
-        .strip()
-        .replace("-----BEGIN PRIVATE KEY-----", "")
-        .replace("-----END PRIVATE KEY-----", "")
-        .replaceAll("\\s+", "");
-
-      byte[] decodedKeyBytes = Base64.getDecoder().decode(privateKeyContent);
-
-      PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(decodedKeyBytes);
-
-      KeyFactory factory = KeyFactory.getInstance("RSA");
-
-      return factory.generatePrivate(keySpec);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
   }
 }

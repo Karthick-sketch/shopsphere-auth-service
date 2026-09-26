@@ -11,9 +11,9 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "token")
 public class TokenProperties {
 
+  private String keyID;
   private String privateKeyPath;
   private String publicKeyPath;
   private long accessExpiration;
   private long refreshExpiration;
-  private String cookieName;
 }

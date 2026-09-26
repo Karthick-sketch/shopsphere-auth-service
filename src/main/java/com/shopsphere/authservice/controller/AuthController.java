@@ -38,9 +38,7 @@ public class AuthController {
 
   @PostMapping("/access")
   public ResponseEntity<AuthResponse> getAccessToken(
-    @CookieValue(
-      name = SecurityConstants.COOKIE_REFRESH_TOKEN
-    ) String refreshToken
+    @CookieValue(name = SecurityConstants.COOKIE_NAME) String refreshToken
   ) {
     if (refreshToken == null) {
       throw new InvalidTokenException();
@@ -50,9 +48,7 @@ public class AuthController {
 
   @PostMapping("/logout")
   public ResponseEntity<?> logout(
-    @CookieValue(
-      name = SecurityConstants.COOKIE_REFRESH_TOKEN
-    ) String refreshToken
+    @CookieValue(name = SecurityConstants.COOKIE_NAME) String refreshToken
   ) {
     if (refreshToken == null) {
       throw new InvalidTokenException();

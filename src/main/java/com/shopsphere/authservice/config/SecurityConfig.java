@@ -26,7 +26,7 @@ public class SecurityConfig {
       )
       .authorizeHttpRequests(auth ->
         auth
-          .requestMatchers("/api/auth/**")
+          .requestMatchers("/api/auth/**", "/.well-known/jwks.json")
           .permitAll()
           .anyRequest()
           .authenticated()

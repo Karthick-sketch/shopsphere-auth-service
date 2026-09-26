@@ -1,6 +1,7 @@
 package com.shopsphere.authservice.service;
 
 import com.shopsphere.authservice.config.TokenProperties;
+import com.shopsphere.authservice.constants.SecurityConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
@@ -20,11 +21,11 @@ public class CookieService {
   }
 
   private String buildCookie(String token, Long maxAge) {
-    return ResponseCookie.from(tokenProperties.getCookieName(), token)
+    return ResponseCookie.from(SecurityConstants.COOKIE_NAME, token)
       .httpOnly(true)
       .sameSite("Strict")
       .secure(false) // Not using SSL yet
-      .path("/")
+      .path(SecurityConstants.COOKIE_PATH)
       .maxAge(maxAge)
       .build()
       .toString();
