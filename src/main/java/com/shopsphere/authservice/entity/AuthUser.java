@@ -9,16 +9,19 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "users")
+@Table(name = "auth_users")
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class User {
+public class AuthUser {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+
+  @Column(nullable = false)
+  private String name;
 
   @Column(unique = true, nullable = false)
   private String email;
@@ -31,6 +34,10 @@ public class User {
   @Builder.Default
   private UserRole role = UserRole.USER;
 
-  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<UserSession> sessions;
+  @OneToMany(
+    mappedBy = "authUser",
+    cascade = CascadeType.ALL,
+    orphanRemoval = true
+  )
+  private List<AuthUserSession> sessions;
 }

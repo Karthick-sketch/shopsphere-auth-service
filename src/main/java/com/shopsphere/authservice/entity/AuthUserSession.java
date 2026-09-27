@@ -5,12 +5,12 @@ import java.time.LocalDateTime;
 import lombok.*;
 
 @Entity
-@Table(name = "user_sessions")
+@Table(name = "auth_user_sessions")
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserSession {
+public class AuthUserSession {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,6 +30,6 @@ public class UserSession {
   private Boolean isRevoked = false;
 
   @ManyToOne
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+  @JoinColumn(name = "auth_user_id", nullable = false)
+  private AuthUser authUser;
 }

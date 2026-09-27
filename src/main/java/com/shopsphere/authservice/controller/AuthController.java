@@ -36,7 +36,7 @@ public class AuthController {
     return buildAuthResponse(authService.login(credential));
   }
 
-  @PostMapping("/access")
+  @PostMapping("/refresh")
   public ResponseEntity<AuthResponse> getAccessToken(
     @CookieValue(name = SecurityConstants.COOKIE_NAME) String refreshToken
   ) {
@@ -64,6 +64,6 @@ public class AuthController {
         HttpHeaders.SET_COOKIE,
         cookieService.createRefreshTokenCookie(tokens.getRefreshToken())
       )
-      .body(new AuthResponse(tokens.getAccessToken()));
+      .body(new AuthResponse(tokens.getAccessToken(), tokens.getAuthUser()));
   }
 }

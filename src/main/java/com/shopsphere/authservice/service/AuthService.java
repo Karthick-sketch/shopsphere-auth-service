@@ -1,5 +1,6 @@
 package com.shopsphere.authservice.service;
 
+import com.shopsphere.authservice.dto.AuthUserResponse;
 import com.shopsphere.authservice.dto.LoginRequest;
 import com.shopsphere.authservice.dto.RegisterRequest;
 import com.shopsphere.authservice.dto.Tokens;
@@ -12,48 +13,59 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthService {
 
-  private final UserService userService;
+  private final AuthUserService authUserService;
   private final JwtService jwtService;
   private final RefreshTokenService refreshTokenService;
 
   public Tokens register(RegisterRequest credential) {
-    User user = userService.createUser(credential);
-    return generateTokens(user);
+    AuthUser authUser = authUserService.createAuthUser(credential);
+    return generateTokens(authUser);
   }
 
   public Tokens login(LoginRequest credential) {
-    User user = userService.validateLogin(credential);
-    return generateTokens(user);
+    AuthUser authUser = authUserService.validateLogin(credential);
+    return generateTokens(authUser);
   }
 
   public Tokens generateAccessToken(String refreshToken) {
-    UserSession userSession = refreshTokenService.findByRefreshToken(
+    AuthUserSession authUserSession = refreshTokenService.findByRefreshToken(
       refreshToken
     );
 
-    if (!refreshTokenService.isValidRefreshToken(userSession)) {
+    if (!refreshTokenService.isValidRefreshToken(authUserSession)) {
       throw new InvalidTokenException();
     }
 
-    return generateTokens(userSession);
+    return generateTokens(authUserSession);
   }
 
   public void logout(String refreshToken) {
     refreshTokenService.revokeRefreshToken(refreshToken);
   }
 
-  private Tokens generateTokens(User user) {
+  private Tokens generateTokens(AuthUser authUser) {
     return new Tokens(
-      jwtService.generateAccessToken(user.getId(), user.getRole()),
-      refreshTokenService.generateRefreshToken(user)
+      jwtService.generateAccessToken(authUser.getId(), authUser.getRole()),
+      refreshTokenService.generateRefreshToken(authUser),
+      toAuthUserResponse(authUser)
     );
   }
 
-  private Tokens generateTokens(UserSession userSession) {
-    User user = userSession.getUser();
+  private Tokens generateTokens(AuthUserSession authUserSession) {
+    AuthUser authUser = authUserSession.getAuthUser();
     return new Tokens(
-      jwtService.generateAccessToken(user.getId(), user.getRole()),
-      refreshTokenService.generateRefreshToken(userSession)
+      jwtService.generateAccessToken(authUser.getId(), authUser.getRole()),
+      refreshTokenService.generateRefreshToken(authUserSession),
+      toAuthUserResponse(authUser)
+    );
+  }
+
+  private AuthUserResponse toAuthUserResponse(AuthUser authUser) {
+    return new AuthUserResponse(
+      authUser.getId(),
+      authUser.getName(),
+      authUser.getEmail(),
+      authUser.getRole()
     );
   }
 }

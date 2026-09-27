@@ -23,7 +23,7 @@ public class CookieService {
   private String buildCookie(String token, Long maxAge) {
     return ResponseCookie.from(SecurityConstants.COOKIE_NAME, token)
       .httpOnly(true)
-      .sameSite("Strict")
+      .sameSite("Lax")
       .secure(false) // Not using SSL yet
       .path(SecurityConstants.COOKIE_PATH)
       .maxAge(maxAge)

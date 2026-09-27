@@ -3,7 +3,7 @@ package com.shopsphere.authservice.service;
 import com.shopsphere.authservice.config.TokenProperties;
 import com.shopsphere.authservice.entity.*;
 import com.shopsphere.authservice.exception.InvalidTokenException;
-import com.shopsphere.authservice.repository.UserSessionRepository;
+import com.shopsphere.authservice.repository.AuthUserSessionRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -19,48 +19,51 @@ public class RefreshTokenService {
 
   private final TokenProperties tokenProperties;
 
-  private final UserSessionRepository userSessionRepository;
+  private final AuthUserSessionRepository authUserSessionRepository;
 
-  public String generateRefreshToken(User user) {
+  public String generateRefreshToken(AuthUser authUser) {
     String token = generateRefreshToken();
-    UserSession userSession = buildUserSession(token, user);
-    userSessionRepository.save(userSession);
+    AuthUserSession authUserSession = buildAuthUserSession(token, authUser);
+    authUserSessionRepository.save(authUserSession);
     return token;
   }
 
-  public String generateRefreshToken(UserSession userSession) {
-    revokeRefreshToken(userSession);
+  public String generateRefreshToken(AuthUserSession authUserSession) {
+    revokeRefreshToken(authUserSession);
     String token = generateRefreshToken();
-    UserSession newUserSession = buildUserSession(token, userSession.getUser());
-    userSessionRepository.save(newUserSession);
+    AuthUserSession newAuthUserSession = buildAuthUserSession(
+      token,
+      authUserSession.getAuthUser()
+    );
+    authUserSessionRepository.save(newAuthUserSession);
     return token;
   }
 
-  public UserSession findByRefreshToken(String refreshToken) {
-    return userSessionRepository
+  public AuthUserSession findByRefreshToken(String refreshToken) {
+    return authUserSessionRepository
       .findByRefreshToken(hashRefreshToken(refreshToken))
       .orElseThrow(() -> new InvalidTokenException());
   }
 
-  public boolean isValidRefreshToken(UserSession userSession) {
+  public boolean isValidRefreshToken(AuthUserSession authUserSession) {
     return (
-      userSession != null &&
-      !userSession.getIsRevoked() &&
-      userSession.getExpiresAt().isAfter(LocalDateTime.now())
+      authUserSession != null &&
+      !authUserSession.getIsRevoked() &&
+      authUserSession.getExpiresAt().isAfter(LocalDateTime.now())
     );
   }
 
   public void revokeRefreshToken(String refreshToken) {
-    UserSession userSession = findByRefreshToken(refreshToken);
-    if (!isValidRefreshToken(userSession)) {
+    AuthUserSession authUserSession = findByRefreshToken(refreshToken);
+    if (!isValidRefreshToken(authUserSession)) {
       throw new InvalidTokenException();
     }
-    revokeRefreshToken(userSession);
+    revokeRefreshToken(authUserSession);
   }
 
-  private void revokeRefreshToken(UserSession userSession) {
-    userSession.setIsRevoked(true);
-    userSessionRepository.save(userSession);
+  private void revokeRefreshToken(AuthUserSession authUserSession) {
+    authUserSession.setIsRevoked(true);
+    authUserSessionRepository.save(authUserSession);
   }
 
   private String generateRefreshToken() {
@@ -81,16 +84,19 @@ public class RefreshTokenService {
     }
   }
 
-  private UserSession buildUserSession(String token, User user) {
+  private AuthUserSession buildAuthUserSession(
+    String token,
+    AuthUser authUser
+  ) {
     LocalDateTime now = LocalDateTime.now();
     LocalDateTime expiresAt = now.plusMinutes(
       tokenProperties.getRefreshExpiration()
     );
-    return UserSession.builder()
+    return AuthUserSession.builder()
       .refreshToken(hashRefreshToken(token))
       .createdAt(now)
       .expiresAt(expiresAt)
-      .user(user)
+      .authUser(authUser)
       .build();
   }
 }
