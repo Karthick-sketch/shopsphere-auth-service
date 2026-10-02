@@ -6,6 +6,8 @@ import com.shopsphere.authservice.dto.RegisterRequest;
 import com.shopsphere.authservice.dto.Tokens;
 import com.shopsphere.authservice.entity.*;
 import com.shopsphere.authservice.exception.InvalidTokenException;
+import com.shopsphere.authservice.kafka.KafkaProducerService;
+import com.shopsphere.authservice.kafka.UserCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,10 +18,13 @@ public class AuthService {
   private final AuthUserService authUserService;
   private final JwtService jwtService;
   private final RefreshTokenService refreshTokenService;
+  private final KafkaProducerService kafkaProducerService;
 
   public Tokens register(RegisterRequest credential) {
     AuthUser authUser = authUserService.createAuthUser(credential);
-    return generateTokens(authUser);
+    Tokens tokens = generateTokens(authUser);
+    kafkaProducerService.sendUserCreatedEvent(toUserCreatedEvent(authUser));
+    return tokens;
   }
 
   public Tokens login(LoginRequest credential) {
@@ -66,6 +71,14 @@ public class AuthService {
       authUser.getName(),
       authUser.getEmail(),
       authUser.getRole()
+    );
+  }
+
+  private UserCreatedEvent toUserCreatedEvent(AuthUser authUser) {
+    return new UserCreatedEvent(
+      authUser.getId(),
+      authUser.getName(),
+      authUser.getEmail()
     );
   }
 }
