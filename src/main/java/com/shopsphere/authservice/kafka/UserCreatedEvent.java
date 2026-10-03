@@ -1,15 +1,24 @@
 package com.shopsphere.authservice.kafka;
 
-import lombok.AllArgsConstructor;
+import com.shopsphere.authservice.dto.UserCreatedData;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
 public class UserCreatedEvent {
 
-  private Long authUserId;
-  private String name;
-  private String email;
+  private UUID eventId;
+  private String eventType;
+  private Instant occurredAt;
+  private UserCreatedData data;
+
+  public UserCreatedEvent(Long userId, String name, String email) {
+    this.data = new UserCreatedData(userId, name, email);
+    this.eventId = UUID.randomUUID();
+    this.eventType = KafkaConstants.USER_CREATED_EVENT_TYPE;
+    this.occurredAt = Instant.now();
+  }
 }
